@@ -56,6 +56,10 @@ async function login() {
 }
 
 async function getToken() {
+  // kalau sudah ada token tersimpan, pakai itu
+  const storedToken = localStorage.getItem("access_token");
+  if (storedToken) return storedToken;
+
   const params = new URLSearchParams(window.location.search);
   const code = params.get("code");
 
@@ -80,8 +84,19 @@ async function getToken() {
   });
 
   const data = await res.json();
-  return data.access_token;
+
+  if (data.access_token) {
+    localStorage.setItem("access_token", data.access_token);
+
+    // bersihkan ?code= dari URL
+    window.history.replaceState({}, document.title, "/");
+
+    return data.access_token;
+  }
+
+  return null;
 }
+
 
 async function getNowPlaying() {
   const token = await getToken();
@@ -116,6 +131,7 @@ getNowPlaying();
 
 </body>
 </html>
+
 
 
 
