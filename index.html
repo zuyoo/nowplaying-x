@@ -4,13 +4,17 @@
   <title>Now Playing</title>
 </head>
 <body style="font-family:sans-serif; text-align:center; margin-top:50px;">
+
   <h1>Now Playing</h1>
 
-  <button onclick="login()">Login Spotify</button>
+  <div style="margin-bottom:20px;">
+    <button onclick="login()">Login Spotify</button>
+    <button onclick="refreshNow()">Refresh</button>
+    <button onclick="tweet()">Tweet</button>
+    <button onclick="resetApp()">Reset</button>
+  </div>
 
   <h2 id="song">-</h2>
-
-  <button onclick="tweet()">Tweet Now Playing</button>
 
   <script>
 const clientId = "6844de5da19b4b6e8a4aac2f7517cb16";
@@ -93,22 +97,23 @@ async function getToken() {
 
 // ================= NOW PLAYING =================
 async function getNowPlaying() {
-  let token = await getToken();
-  if (!token) return;
-
-  let res = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
-    headers: { Authorization: "Bearer " + token }
-  });
-
-  // If token expired → clear & require login again
-  if (res.status === 401) {
-    localStorage.removeItem("access_token");
-    alert("Session expired. Please login again.");
+  const token = await getToken();
+  if (!token) {
+    document.getElementById("song").innerText = "Please login first";
     return;
   }
 
+  const res = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
+    headers: { Authorization: "Bearer " + token }
+  });
+
   if (res.status === 204) {
-    document.getElementById("song").innerText = "No song currently playing";
+    document.getElementById("song").innerText = "Nothing is playing";
+    return;
+  }
+
+  if (res.status === 401) {
+    document.getElementById("song").innerText = "Session expired, please reset";
     return;
   }
 
@@ -123,10 +128,21 @@ async function getNowPlaying() {
 
     document.getElementById("song").innerText = text;
     window.tweetText = text;
+  } else {
+    document.getElementById("song").innerText = "No song detected";
   }
 }
 
-// ================= TWEET =================
+// ================= ACTIONS =================
+function refreshNow() {
+  getNowPlaying();
+}
+
+function resetApp() {
+  localStorage.clear();
+  location.href = redirectUri;
+}
+
 function tweet() {
   if (!window.tweetText) return alert("No song detected");
   const url = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(window.tweetText);
@@ -136,13 +152,10 @@ function tweet() {
 // ================= INIT =================
 getNowPlaying();
 
-// Optional: auto-login if not authenticated
-if (!localStorage.getItem("access_token") && !window.location.search.includes("code")) {
-  // comment this line if you DON'T want auto login
-  // login();
-}
+// Auto refresh every 10 seconds
+setInterval(getNowPlaying, 10000);
+
 </script>
 
 </body>
 </html>
-
