@@ -13,53 +13,110 @@
   <button onclick="tweet()">Tweet Now Playing</button>
 
   <script>
-    const clientId = "6844de5da19b4b6e8a4aac2f7517cb16";
-    const redirectUri = "https://nowplaying-x.vercel.app";
+const clientId = "6844de5da19b4b6e8a4aac2f7517cb16";
+const redirectUri = "https://nowplaying-x.vercel.app";
 
-    function login() {
-      const scope = "user-read-currently-playing";
-      window.location = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${redirectUri}&scope=${scope}&show_dialog=true`;
-    }
+function generateRandomString(length) {
+  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  return Array.from(crypto.getRandomValues(new Uint8Array(length)))
+    .map(x => possible[x % possible.length]).join('');
+}
 
-    function getToken() {
-      const hash = window.location.hash;
-      if (!hash) return null;
-      return hash.split("&")[0].split("=")[1];
-    }
+async function sha256(plain) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(plain);
+  return await crypto.subtle.digest('SHA-256', data);
+}
 
-    async function getNowPlaying() {
-      const token = getToken();
-      if (!token) return;
+function base64encode(input) {
+  return btoa(String.fromCharCode(...new Uint8Array(input)))
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+}
 
-      const res = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
-        headers: { Authorization: "Bearer " + token }
-      });
+async function login() {
+  const codeVerifier = generateRandomString(64);
+  localStorage.setItem("verifier", codeVerifier);
 
-      const data = await res.json();
+  const hashed = await sha256(codeVerifier);
+  const codeChallenge = base64encode(hashed);
 
-      if (data && data.item) {
-        const title = data.item.name;
-        const artist = data.item.artists[0].name;
-        const url = data.item.external_urls.spotify;
+  const scope = "user-read-currently-playing";
 
-        const text = `${title} - ${artist} #nowplaying ${url}`;
+  const url = new URL("https://accounts.spotify.com/authorize");
+  url.searchParams.set("client_id", clientId);
+  url.searchParams.set("response_type", "code");
+  url.searchParams.set("redirect_uri", redirectUri);
+  url.searchParams.set("code_challenge_method", "S256");
+  url.searchParams.set("code_challenge", codeChallenge);
+  url.searchParams.set("scope", scope);
 
-        document.getElementById("song").innerText = text;
+  window.location = url;
+}
 
-        window.tweetText = text;
-      }
-    }
+async function getToken() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("code");
 
-    function tweet() {
-      if (!window.tweetText) return alert("No song detected");
-      const url = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(window.tweetText);
-      window.open(url, "_blank");
-    }
+  if (!code) return null;
 
-    getNowPlaying();
-  </script>
+  const verifier = localStorage.getItem("verifier");
+
+  const body = new URLSearchParams({
+    client_id: clientId,
+    grant_type: "authorization_code",
+    code: code,
+    redirect_uri: redirectUri,
+    code_verifier: verifier,
+  });
+
+  const res = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: body
+  });
+
+  const data = await res.json();
+  return data.access_token;
+}
+
+async function getNowPlaying() {
+  const token = await getToken();
+  if (!token) return;
+
+  const res = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
+    headers: { Authorization: "Bearer " + token }
+  });
+
+  const data = await res.json();
+
+  if (data && data.item) {
+    const title = data.item.name;
+    const artist = data.item.artists[0].name;
+    const url = data.item.external_urls.spotify;
+
+    const text = `${title} - ${artist} #nowplaying ${url}`;
+
+    document.getElementById("song").innerText = text;
+    window.tweetText = text;
+  }
+}
+
+function tweet() {
+  if (!window.tweetText) return alert("No song detected");
+  const url = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(window.tweetText);
+  window.open(url, "_blank");
+}
+
+getNowPlaying();
+</script>
+
 </body>
 </html>
+
 
 
 
