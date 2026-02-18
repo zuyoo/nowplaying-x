@@ -48,7 +48,7 @@ async function login() {
   const hashed = await sha256(codeVerifier);
   const codeChallenge = base64encode(hashed);
 
-  const scope = "user-read-currently-playing";
+  const scope = "user-read-currently-playing user-read-playback-state";
 
   const url = new URL("https://accounts.spotify.com/authorize");
   url.searchParams.set("client_id", clientId);
@@ -159,3 +159,4 @@ setInterval(getNowPlaying, 10000);
 
 </body>
 </html>
+
