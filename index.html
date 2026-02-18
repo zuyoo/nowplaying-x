@@ -132,8 +132,10 @@ function refreshNow() {
 }
 
 function resetApp() {
-  localStorage.clear();
-  location.href = redirectUri;
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("verifier");
+  window.history.replaceState({}, document.title, redirectUri);
+  document.getElementById("song").innerText = "-";
 }
 
 function tweet() {
@@ -152,6 +154,7 @@ setInterval(getNowPlaying, 10000);
 
 </body>
 </html>
+
 
 
 
