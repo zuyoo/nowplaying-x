@@ -97,40 +97,32 @@ async function getToken() {
 
 // ================= NOW PLAYING =================
 async function getNowPlaying() {
-  const token = await getToken();
-  if (!token) {
+  const code = new URLSearchParams(window.location.search).get("code");
+  const verifier = localStorage.getItem("verifier");
+
+  if (!code || !verifier) {
     document.getElementById("song").innerText = "Please login first";
     return;
   }
 
-  const res = await fetch("https://api.spotify.com/v1/me/player", {
-  headers: { Authorization: "Bearer " + token }
-});
-
-
-  if (res.status === 204) {
-    document.getElementById("song").innerText = "Nothing is playing";
-    return;
-  }
-
-  if (res.status === 401) {
-    document.getElementById("song").innerText = "Session expired, please reset";
-    return;
-  }
+  const res = await fetch("/api/spotify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code, verifier })
+  });
 
   const data = await res.json();
 
-  if (data && data.item) {
-    const title = data.item.name;
-    const artist = data.item.artists[0].name;
-    const url = data.item.external_urls.spotify;
+  if (data.song && data.song.item) {
+    const title = data.song.item.name;
+    const artist = data.song.item.artists[0].name;
+    const url = data.song.item.external_urls.spotify;
 
     const text = `${title} - ${artist} #nowplaying ${url}`;
-
     document.getElementById("song").innerText = text;
     window.tweetText = text;
   } else {
-    document.getElementById("song").innerText = "No song detected";
+    document.getElementById("song").innerText = data.message || "No song detected";
   }
 }
 
@@ -160,5 +152,6 @@ setInterval(getNowPlaying, 10000);
 
 </body>
 </html>
+
 
 
