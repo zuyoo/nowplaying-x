@@ -16,6 +16,7 @@
 const clientId = "6844de5da19b4b6e8a4aac2f7517cb16";
 const redirectUri = "https://nowplaying-x.vercel.app";
 
+// ================= HELPERS =================
 function generateRandomString(length) {
   const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   return Array.from(crypto.getRandomValues(new Uint8Array(length)))
@@ -35,6 +36,7 @@ function base64encode(input) {
     .replace(/\//g, '_');
 }
 
+// ================= LOGIN =================
 async function login() {
   const codeVerifier = generateRandomString(64);
   localStorage.setItem("verifier", codeVerifier);
@@ -55,8 +57,8 @@ async function login() {
   window.location = url;
 }
 
+// ================= TOKEN =================
 async function getToken() {
-  // kalau sudah ada token tersimpan, pakai itu
   const storedToken = localStorage.getItem("access_token");
   if (storedToken) return storedToken;
 
@@ -88,8 +90,8 @@ async function getToken() {
   if (data.access_token) {
     localStorage.setItem("access_token", data.access_token);
 
-    // bersihkan ?code= dari URL
-    window.history.replaceState({}, document.title, "/");
+    // FIX: keep correct URL
+    window.history.replaceState({}, document.title, redirectUri);
 
     return data.access_token;
   }
@@ -97,14 +99,26 @@ async function getToken() {
   return null;
 }
 
-
+// ================= NOW PLAYING =================
 async function getNowPlaying() {
-  const token = await getToken();
+  let token = await getToken();
   if (!token) return;
 
-  const res = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
+  let res = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
     headers: { Authorization: "Bearer " + token }
   });
+
+  // If token expired → clear & require login again
+  if (res.status === 401) {
+    localStorage.removeItem("access_token");
+    alert("Session expired. Please login again.");
+    return;
+  }
+
+  if (res.status === 204) {
+    document.getElementById("song").innerText = "No song currently playing";
+    return;
+  }
 
   const data = await res.json();
 
@@ -120,19 +134,22 @@ async function getNowPlaying() {
   }
 }
 
+// ================= TWEET =================
 function tweet() {
   if (!window.tweetText) return alert("No song detected");
   const url = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(window.tweetText);
   window.open(url, "_blank");
 }
 
+// ================= INIT =================
 getNowPlaying();
+
+// Optional: auto-login if not authenticated
+if (!localStorage.getItem("access_token") && !window.location.search.includes("code")) {
+  // comment this line if you DON'T want auto login
+  // login();
+}
 </script>
 
 </body>
 </html>
-
-
-
-
-
