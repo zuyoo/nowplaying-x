@@ -18,7 +18,7 @@
 
     function login() {
       const scope = "user-read-currently-playing";
-      window.location = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${redirectUri}&scope=${scope}`;
+      window.location = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${redirectUri}&scope=${scope}&show_dialog=true`;
     }
 
     function getToken() {
@@ -60,5 +60,6 @@
   </script>
 </body>
 </html>
+
 
 
