@@ -7,8 +7,8 @@ export default async function handler(req, res) {
 
   // Step 1: exchange code for access token
   const params = new URLSearchParams();
-  params.append("client_id", "YOUR_CLIENT_ID");
-  params.append("client_secret", "YOUR_CLIENT_SECRET"); // safe in backend
+  params.append("client_id", "6844de5da19b4b6e8a4aac2f7517cb16");
+  params.append("client_secret", "65f57cb6431b436983ef8624e0310d41"); // safe in backend
   params.append("grant_type", "authorization_code");
   params.append("code", code);
   params.append("redirect_uri", "https://nowplaying-x.vercel.app");
@@ -36,3 +36,4 @@ export default async function handler(req, res) {
   const songData = await songRes.json();
   return res.status(200).json({ song: songData, access_token: accessToken });
 }
+
