@@ -103,9 +103,10 @@ async function getNowPlaying() {
     return;
   }
 
-  const res = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
-    headers: { Authorization: "Bearer " + token }
-  });
+  const res = await fetch("https://api.spotify.com/v1/me/player", {
+  headers: { Authorization: "Bearer " + token }
+});
+
 
   if (res.status === 204) {
     document.getElementById("song").innerText = "Nothing is playing";
@@ -159,4 +160,5 @@ setInterval(getNowPlaying, 10000);
 
 </body>
 </html>
+
 
