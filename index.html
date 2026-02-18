@@ -64,14 +64,13 @@ async function login() {
 // ================= TOKEN =================
 async function getToken() {
   const storedToken = localStorage.getItem("access_token");
-  if (storedToken) return storedToken; // reuse token
+  if (storedToken) return storedToken;
 
   const params = new URLSearchParams(window.location.search);
   const code = params.get("code");
   if (!code) return null;
 
   const verifier = localStorage.getItem("verifier");
-
   const res = await fetch("/api/spotify", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -79,19 +78,17 @@ async function getToken() {
   });
 
   const data = await res.json();
-
   if (data.access_token) {
     localStorage.setItem("access_token", data.access_token);
-    window.history.replaceState({}, document.title, redirectUri);
+    window.history.replaceState({}, document.title, redirectUri); // clean URL
     return data.access_token;
   }
-
   return null;
 }
 
 // ================= NOW PLAYING =================
 async function getNowPlaying() {
-  const token = await getToken(); // get or reuse token
+  const token = await getToken();
   if (!token) {
     document.getElementById("song").innerText = "Please login first";
     return;
@@ -100,7 +97,7 @@ async function getNowPlaying() {
   const res = await fetch("/api/spotify-current", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token }), // send token to backend
+    body: JSON.stringify({ token }),
   });
 
   const data = await res.json();
@@ -145,6 +142,7 @@ setInterval(getNowPlaying, 10000);
 
 </body>
 </html>
+
 
 
 
